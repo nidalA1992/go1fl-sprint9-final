@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -51,6 +52,9 @@ func maxChunks(data []int) int {
 	maxValues := make([]int, 8)
 	var chunkSize = len(data) / CHUNKS
 
+	wg := sync.WaitGroup{}
+	wg.Add(CHUNKS)
+
 	for i := 0; i < CHUNKS; i++ {
 		begin := i * chunkSize
 		end := begin + chunkSize
@@ -59,9 +63,13 @@ func maxChunks(data []int) int {
 			end = len(data)
 		}
 
-		maxValues = append(maxValues, maximum(data[begin:end]))
+		go func() {
+			maxValues = append(maxValues, maximum(data[begin:end]))
+			defer wg.Done()
+		}()
 	}
 
+	wg.Wait()
 	return maximum(maxValues)
 }
 
@@ -76,7 +84,7 @@ func main() {
 
 	fmt.Printf("Максимальное значение элемента: %d\nВремя поиска: %d ms\n", max, elapsed.Microseconds())
 
-	fmt.Printf("Ищем максимальное значение в %d потоков", CHUNKS)
+	fmt.Printf("Ищем максимальное значение в %d потоков\n", CHUNKS)
 	now = time.Now()
 	max = maxChunks(elms)
 	elapsed = time.Since(now)
